@@ -2,17 +2,23 @@
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 
+#include "iostream"
+#include "string"
+
 // Secret macros
 // Create arduino_secrets.h containing:
 // #define SECRET_SSID "Your WiFi SSID"
 // #define SECRET_PSK  "Your WiFi password"
 #include "arduino_secrets.h" 
 
+using namespace std;
+
 const char*      ssid     = SECRET_SSID;
 const char*      password = SECRET_PSK;
 ESP8266WebServer server(80);
 
-void setup(void) {
+void setup(void)
+{
     // Set up serial bauds
     Serial.begin(115200);
     
@@ -31,61 +37,34 @@ void setup(void) {
     Serial.print("Connected, IP address: ");
     Serial.println(WiFi.localIP());
 
-    //for (auto pin : { D0, D1, D2 })
-    //{
-    //    server.on("/on" + i, []() {
-    //        digitalWrite(pin, HIGH);
-    //        server.send(200, "text/plain", "D{0} on");
-    //    });
-    //
-    //    server.on("/off" + i, []() {
-    //        digitalWrite(pin, LOW);
-    //        server.send(200, "text/plain", "D{0} off");
-    //    });
-    //    
-    //    pinMode(pim, OUTPUT);
-    //}
+    tuple<string, int> pinMap[] { { "d0", D0 },
+                                  { "d1", D1 },
+                                  { "d2", D2 } };
 
     // Set up API
-    server.on("/on0", []() {
-        digitalWrite(D0, HIGH);
-        server.send(200, "text/plain", "D0 on");
-    });
-    
-    server.on("/off0", []() {
-        digitalWrite(D0, LOW);
-        server.send(200, "text/plain", "D0 off");
-    });
-
-    server.on("/on1", []() {
-        digitalWrite(D1, HIGH);
-        server.send(200, "text/plain", "D1 on");
-    });
-    
-    server.on("/off1", []() {
-        digitalWrite(D1, LOW);
-        server.send(200, "text/plain", "D1 off");
-    });
-
-    server.on("/on2", []() {
-        digitalWrite(D2, HIGH);
-        server.send(200, "text/plain", "D2 on");
-    });
-    
-    server.on("/off2", []() {
-        digitalWrite(D2, LOW);
-        server.send(200, "text/plain", "D2 off");
-    });
+    // Does C++ have cartesian product in standard library?
+    // If so, do the product of pinMap and { on, off } and
+    // use a single expression in loop
+    for (auto [ name, pinId ] : pinMap)
+    {
+        server.on(("/" + name + "/off").c_str(), [=]() {
+            digitalWrite(pinId, LOW);
+            server.send(200, "text/plain", (name + " off").c_str());
+        });
+       
+        server.on(("/" + name + "/on").c_str(), [=]() {
+            digitalWrite(pinId, HIGH);
+            server.send(200, "text/plain", (name + " on").c_str());
+        });
+        
+        pinMode(pinId, OUTPUT);
+    }
 
     // Start web server
     server.begin();
-    
-    // Set up pins as output
-    pinMode(D0, OUTPUT);
-    pinMode(D1, OUTPUT);
-    pinMode(D2, OUTPUT);
 }
 
-void loop(void) {
+void loop(void)
+{
     server.handleClient();
 }
