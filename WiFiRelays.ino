@@ -2,7 +2,6 @@
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 
-#include "iostream"
 #include "string"
 
 // Secret macros
@@ -37,15 +36,13 @@ void setup(void)
     Serial.print("Connected, IP address: ");
     Serial.println(WiFi.localIP());
 
-    tuple<string, int> pinMap[] { { "d0", D0 },
-                                  { "d1", D1 },
-                                  { "d2", D2 } };
-
     // Set up API
     // Does C++ have cartesian product in standard library?
     // If so, do the product of pinMap and { on, off } and
     // use a single expression in loop
-    for (auto [ name, pinId ] : pinMap)
+    for (auto [ name, pinId ] : (tuple<string, int>[]) { { "d0", D0 },
+                                                         { "d1", D1 },
+                                                         { "d2", D2 } })
     {
         server.on(("/" + name + "/off").c_str(), [=]() {
             digitalWrite(pinId, LOW);
