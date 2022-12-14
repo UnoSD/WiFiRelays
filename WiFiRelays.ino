@@ -12,9 +12,28 @@
 
 using namespace std;
 
-const char*      ssid     = SECRET_SSID;
-const char*      password = SECRET_PSK;
 ESP8266WebServer server(80);
+
+IPAddress connect(char* ssid, char* psk)
+{
+    auto status = WiFi.status();
+    
+    switch (status)
+    {
+        case WL_CONNECTED:
+          return WiFi.localIP();
+        case WL_DISCONNECTED:
+          WiFi.mode(WIFI_STA);
+          WiFi.begin(ssid, psk);
+          
+          return connect(ssid, psk);
+        default:
+          Serial.println(WiFi.status());
+          delay(500);
+          
+          return connect(ssid, psk);
+    }
+}
 
 void setup(void)
 {
@@ -22,19 +41,7 @@ void setup(void)
     Serial.begin(115200);
     
     // Set up WiFi
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-
-    // Wait for connection
-    Serial.print("Connecting");
-  
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-    
-    Serial.print("Connected, IP address: ");
-    Serial.println(WiFi.localIP());
+    Serial.println(connect(SECRET_SSID, SECRET_PSK));
 
     // Set up API
     // Does C++ have cartesian product in standard library?
@@ -44,15 +51,12 @@ void setup(void)
                                                          { "d1", D1 },
                                                          { "d2", D2 } })
     {
-        server.on(("/" + name + "/off").c_str(), [=]() {
-            digitalWrite(pinId, LOW);
-            server.send(200, "text/plain", (name + " off").c_str());
-        });
-       
-        server.on(("/" + name + "/on").c_str(), [=]() {
-            digitalWrite(pinId, HIGH);
-            server.send(200, "text/plain", (name + " on").c_str());
-        });
+        for (auto [ displayName, outputValueId ] : (tuple<string, int>[]) { { "on" , HIGH },
+                                                                            { "off", LOW  } })
+            server.on(("/" + name + "/off").c_str(), [=]() {
+                digitalWrite(pinId, LOW);
+                server.send(200, "text/plain", (name + " off").c_str());
+            });
         
         pinMode(pinId, OUTPUT);
     }
