@@ -14,24 +14,30 @@ using namespace std;
 
 ESP8266WebServer server(80);
 
-IPAddress connect(char* ssid, char* psk)
+IPAddress connect(ESP8266WiFiClass wifi, char* ssid, char* psk)
 {
-    auto status = WiFi.status();
+    auto status = wifi.status();
     
     switch (status)
     {
         case WL_CONNECTED:
-          return WiFi.localIP();
+            return wifi.localIP();
         case WL_DISCONNECTED:
-          WiFi.mode(WIFI_STA);
-          WiFi.begin(ssid, psk);
-          
-          return connect(ssid, psk);
+            wifi.mode(WIFI_STA);
+            wifi.begin(ssid, psk);
+            
+            return connect(wifi, ssid, psk);
+        case WL_NO_SHIELD      :
+        case WL_IDLE_STATUS    :
+        case WL_NO_SSID_AVAIL  :
+        case WL_SCAN_COMPLETED :
+        case WL_CONNECT_FAILED :
+        case WL_CONNECTION_LOST:
         default:
-          Serial.println(WiFi.status());
-          delay(500);
-          
-          return connect(ssid, psk);
+            Serial.println(status);
+            delay(500);
+
+            return connect(wifi, ssid, psk);
     }
 }
 
@@ -41,12 +47,9 @@ void setup(void)
     Serial.begin(115200);
     
     // Set up WiFi
-    Serial.println(connect(SECRET_SSID, SECRET_PSK));
+    Serial.println(connect(WiFi, SECRET_SSID, SECRET_PSK));
 
     // Set up API
-    // Does C++ have cartesian product in standard library?
-    // If so, do the product of pinMap and { on, off } and
-    // use a single expression in loop
     for (auto [ name, pinId ] : (tuple<string, int>[]) { { "d0", D0 },
                                                          { "d1", D1 },
                                                          { "d2", D2 } })
