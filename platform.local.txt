@@ -1,0 +1,3 @@
+# Save this in the same location as platform.txt
+
+build.stdcpp_level=-std=gnu++20
