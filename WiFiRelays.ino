@@ -26,11 +26,11 @@ const char* prettyWiFiStatus(wl_status_t status)
         case WL_CONNECT_FAILED : return "WL_CONNECT_FAILED";
         case WL_CONNECTION_LOST: return "WL_CONNECTION_LOST";
         case WL_DISCONNECTED   : return "WL_DISCONNECTED";
-        case default           : return "Unknown"
+        default                : return "Unknown";
     }
 }
 
-IPAddress connect(ESP8266WiFiClass wifi, char* ssid, char* psk)
+IPAddress connect(ESP8266WiFiClass wifi, char* ssid, char* psk, bool initiated)
 {
     auto status = wifi.status();
     
@@ -39,10 +39,15 @@ IPAddress connect(ESP8266WiFiClass wifi, char* ssid, char* psk)
         case WL_CONNECTED:
             return wifi.localIP();
         case WL_DISCONNECTED:
-            wifi.mode(WIFI_STA);
-            wifi.begin(ssid, psk);
+            if (!initiated)
+            {
+                wifi.mode(WIFI_STA);
+                wifi.begin(ssid, psk);
+            }
             
-            return connect(wifi, ssid, psk);
+            delay(500);
+            
+            return connect(wifi, ssid, psk, true);
         case WL_NO_SHIELD      :
         case WL_IDLE_STATUS    :
         case WL_NO_SSID_AVAIL  :
@@ -51,26 +56,9 @@ IPAddress connect(ESP8266WiFiClass wifi, char* ssid, char* psk)
         case WL_CONNECTION_LOST:
         default:
             Serial.println(status);
-            delay(500);
 
-            return connect(wifi, ssid, psk);
+            return connect(wifi, ssid, psk, false);
     }
-}
-
-void connectWiFi()
-{
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(SECRET_SSID, SECRET_PSK);
-    
-    Serial.print("Connecting to WiFi ..");
-    
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        Serial.print('.');
-        delay(1000);
-    }
-    
-    Serial.println(WiFi.localIP());
 }
 
 void setup(void)
@@ -79,8 +67,7 @@ void setup(void)
     Serial.begin(115200);
 
     // Set up WiFi
-    connectWiFi();
-    //Serial.println(connect(WiFi, SECRET_SSID, SECRET_PSK));
+    Serial.println(connect(WiFi, SECRET_SSID, SECRET_PSK, false));
 
     // Set up API
     for (auto [ name, pinId ] : (tuple<string, int>[]) { { "d0", D0 },
