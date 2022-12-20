@@ -10,6 +10,9 @@
 // #define SECRET_PSK  "Your WiFi password"
 #include "arduino_secrets.h" 
 
+// Random on/off for all three pins every 0.3 second
+// while true; do for pin in d0 d1 d2; do curl "http://192.168.2.37/$pin/$([[ $(($RANDOM%2)) == 0 ]] && echo on || echo off)"; done; sleep 0.3; done
+
 using namespace std;
 
 ESP8266WebServer server(80);
